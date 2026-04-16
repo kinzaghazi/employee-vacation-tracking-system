@@ -1,47 +1,40 @@
 # Vacation Management System
 
 ## Overview
-A full-stack web application built using Python, SQLite, HTML, and CSS to manage employee vacation requests. The system includes a user interface and backend logic, supporting multiple user roles with different access levels.
+The Vacation Management System is a full-stack web application built using Flask, SQLite, HTML, and CSS. It is designed to manage employee vacation requests within an organization using a role-based access control system.
+
+The application supports multiple user roles such as Employee, HR, Department Head, and Admin, each with different permissions and dashboards.
+
+---
 
 ## Features
-- Role-based access control (employee, manager, admin)
-- Submit, review, and approve/reject vacation requests
-- Interactive frontend built with HTML and CSS
-- Backend logic implemented in Python
-- SQLite database for persistent data storage
-- CRUD operations for managing users and requests
+
+### User Management
+- User registration and login system
+- Role-based access control (Employee, HR, Department Head, Admin)
+- Secure password hashing using Werkzeug
+
+### Vacation Workflow
+- Employees can submit vacation requests
+- Managers/HR can review, approve, or reject requests
+- Department-level tracking of vacation balances
+- Status updates for each request (Pending, Approved, Rejected)
+
+### Dashboards
+- Separate dashboards for each user role
+- Role-specific views and permissions
+- Organized request management interface
+
+---
 
 ## Tech Stack
-- Python
-- SQLite
-- HTML
-- CSS
 
-## Key Concepts Demonstrated
-- Full-stack development (frontend + backend + database)
-- Role-based authorization
-- Workflow and business logic implementation
-- Database design and data handling
-- User interface development
+- **Backend:** Python (Flask)
+- **Database:** SQLite (SQLAlchemy ORM)
+- **Frontend:** HTML, CSS
+- **Authentication:** Flask-Login
+- **Security:** Werkzeug password hashing
 
-## How to Run
+---
 
-1. Clone the repository:
-git clone https://github.com/yourusername/vacation-management-system.git
-
-2. Navigate into the folder:
-cd vacation-management-system
-
-3. Run the application:
-python main.py
-
-4. Open the application in your browser (if applicable)
-
-## Future Improvements
-- Migrate frontend to React
-- Add authentication (login system)
-- Improve UI/UX design
-- Add API layer for scalability
-
-## Notes
-This project demonstrates the ability to build a complete application with both frontend and backend components, simulating a real-world business system.
+## Project Structure
