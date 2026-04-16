@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Executive Director Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .btn-approve {
+            background: #27ae60;
+            padding: 5px 10px;
+            font-size: 12px;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn-deny {
+            background: #e74c3c;
+            padding: 5px 10px;
+            font-size: 12px;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .badge-special {
+            background: #f39c12;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: bold;
+            display: inline-block;
+            margin-left: 5px;
+        }
+        .badge-part-day {
+            background: #9b59b6;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: bold;
+            display: inline-block;
+            margin-left: 5px;
+        }
+        .table-wrapper {
+            overflow-x: auto;
+            margin-top: 15px;
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .data-table th,
+        .data-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        .data-table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        .status-pending {
+            color: #f39c12;
+            font-weight: bold;
+        }
+        .status-approved {
+            color: #27ae60;
+            font-weight: bold;
+        }
+        .status-denied {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        .special-consideration {
+            background-color: #fff8e7;
+        }
+        .stats-grid {
+            display: flex;
+            gap: 15px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        .stat-item {
+            flex: 1;
+            text-align: center;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .stat-number {
+            font-size: 36px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .stat-label {
+            font-size: 14px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+
+<div class="navbar">
+    <h1>Executive Director Dashboard</h1>
+    <div>
+        <span>Welcome, {{ current_user.username }}</span>
+        <a href="{{ url_for('logout') }}">Logout</a>
+    </div>
+</div>
+
+<div class="container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Department Heads List -->
+    <div class="card">
+        <h2>Department Heads</h2>
+        <div class="table-wrapper">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Department</th>
+                        <th>Manages</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for head in dept_heads %}
+                    <tr>
+                        <td>{{ head.username }}</td>
+                        <td>{{ head.email }}</td>
+                        <td>{{ head.department }}</td>
+                        <td>{{ head.manages_department }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Pending Department Head Requests -->
+    <div class="card">
+        <h2>Pending Vacation Requests from Department Heads</h2>
+        {% if pending_head_requests %}
+        <div class="table-wrapper">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Department Head</th>
+                        <th>Department</th>
+                        <th>Start Date</th>
+                        <th>End Date</th>
+                        <th>Amount</th>
+                        <th>Reason</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for req in pending_head_requests %}
+                    <tr {% if req.is_special_consideration %}class="special-consideration"{% endif %}>
+                        <td>{{ req.employee.username }}</td>
+                        <td>{{ req.employee.department }}</td>
+                        <td>{{ req.start_date }}</td>
+                        <td>{{ req.end_date }}</td>
+                        <td>{{ req.get_display_text() }}</td>
+                        <td>
+                            {{ req.reason }}
+                            {% if req.is_special_consideration %}
+                            <span class="badge-special">Special</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{{ url_for('approve_request', request_id=req.id) }}" class="btn-approve">Approve</a>
+                            <a href="{{ url_for('deny_request', request_id=req.id) }}" class="btn-deny">Deny</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p>No pending requests from department heads.</p>
+        {% endif %}
+    </div>
+
+    <!-- All Department Head Requests History -->
+    <div class="card">
+        <h2>All Department Head Requests History</h2>
+        {% if all_head_requests %}
+        <div class="table-wrapper">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Department Head</th>
+                        <th>Department</th>
+                        <th>Start Date</th>
+                        <th>End Date</th>
+                        <th>Amount</th>
+                        <th>Reason</th>
+                        <th>Status</th>
+                        <th>Approved By</th>
+                        <th>Approved At</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for req in all_head_requests %}
+                    <tr {% if req.is_special_consideration %}class="special-consideration"{% endif %}>
+                        <td>{{ req.employee.username }}</td>
+                        <td>{{ req.employee.department }}</td>
+                        <td>{{ req.start_date }}</td>
+                        <td>{{ req.end_date }}</td>
+                        <td>{{ req.get_display_text() }}</td>
+                        <td>
+                            {{ req.reason }}
+                            {% if req.is_special_consideration %}
+                            <span class="badge-special">Special</span>
+                            {% endif %}
+                        </td>
+                        <td class="status-{{ req.status }}">{{ req.status|upper }}</td>
+                        <td>
+                            {% if req.approved_by %}
+                                {% if req.approver %}
+                                    {{ req.approver.username }}
+                                {% else %}
+                                    {{ req.approved_by }}
+                                {% endif %}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if req.approved_at %}
+                                {{ req.approved_at.strftime('%Y-%m-%d %H:%M') }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p>No requests found from department heads.</p>
+        {% endif %}
+    </div>
+
+    <!-- Executive Summary -->
+    <div class="card">
+        <h2>Executive Summary</h2>
+        <div class="stats-grid">
+            <div class="stat-item">
+                <div class="stat-number">{{ dept_heads|length }}</div>
+                <div class="stat-label">Department Heads</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">{{ pending_head_requests|length }}</div>
+                <div class="stat-label">Pending Requests</div>
+            </div>
+            <div class="stat-item">
+                {% set special_count = 0 %}
+                {% for req in all_head_requests %}
+                    {% if req.is_special_consideration %}
+                        {% set special_count = special_count + 1 %}
+                    {% endif %}
+                {% endfor %}
+                <div class="stat-number">{{ special_count }}</div>
+                <div class="stat-label">Special Consideration</div>
+            </div>
+            <div class="stat-item">
+                {% set total_days = 0 %}
+                {% for req in all_head_requests %}
+                    {% set total_days = total_days + req.get_days_count() %}
+                {% endfor %}
+                <div class="stat-number">{{ total_days }}</div>
+                <div class="stat-label">Total Days Requested</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HR Manager Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .btn-update {
+            background: #27ae60;
+            padding: 5px 10px;
+            font-size: 12px;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .btn-delete {
+            background: #e74c3c;
+            padding: 5px 10px;
+            font-size: 12px;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .allocation-input {
+            width: 70px;
+            padding: 5px;
+            text-align: center;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+        }
+        .category-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        .category-vacation { background: #3498db; color: white; }
+        .category-personal { background: #e67e22; color: white; }
+        .category-sick { background: #e74c3c; color: white; }
+        .category-volunteer { background: #27ae60; color: white; }
+        .category-jury { background: #9b59b6; color: white; }
+        .hr-welcome {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+        }
+        .stats-grid {
+            display: flex;
+            gap: 15px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        .stat-item {
+            flex: 1;
+            text-align: center;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .stat-number {
+            font-size: 36px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .stat-label {
+            font-size: 14px;
+            color: #666;
+        }
+        .table-wrapper {
+            overflow-x: auto;
+            margin-top: 15px;
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .data-table th,
+        .data-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        .data-table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        .status-pending {
+            color: #f39c12;
+            font-weight: bold;
+        }
+        .status-approved {
+            color: #27ae60;
+            font-weight: bold;
+        }
+        .status-denied {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        .badge-special {
+            background: #f39c12;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 10px;
+        }
+        .alert {
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .alert-danger {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .alert-warning {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .card h2 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        .navbar {
+            background: #2c3e50;
+            color: white;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .navbar a {
+            color: white;
+            text-decoration: none;
+            margin-left: 15px;
+        }
+        .navbar .btn {
+            background: #3498db;
+            padding: 8px 15px;
+            border-radius: 3px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .btn {
+            display: inline-block;
+            padding: 8px 15px;
+            background: #3498db;
+            color: white;
+            text-decoration: none;
+            border-radius: 3px;
+            border: none;
+            cursor: pointer;
+        }
+        .btn:hover {
+            background: #2980b9;
+        }
+        .dash-placeholder {
+            color: #95a5a6;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+<div class="navbar">
+    <h1>HR Manager Dashboard</h1>
+    <div>
+        <span>Welcome, {{ current_user.username }}</span>
+        <a href="{{ url_for('register_user') }}" class="btn">Register New User</a>
+        <a href="{{ url_for('logout') }}" class="btn">Logout</a>
+    </div>
+</div>
+
+<div class="container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="hr-welcome">
+        <h2>HR Management Console</h2>
+        <p>Manage users, leave allocations, and oversee all vacation requests</p>
+    </div>
+
+    <div class="card">
+        <h2>Register New User</h2>
+        <a href="{{ url_for('register_user') }}" class="btn">Add New User</a>
+    </div>
+
+    <div class="card">
+        <h2>Manage User Leave Allocations</h2>
+        <div class="table-wrapper">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Username</th>
+                        <th>Role</th>
+                        <th>Vacation</th>
+                        <th>Personal</th>
+                        <th>Sick</th>
+                        <th>Volunteer</th>
+                        <th>Jury Duty</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                        {% if user.role != 'exec_director' and user.role != 'hr' %}
+                        <tr>
+                            <td>{{ user.username }}</td>
+                            <td>{{ user.get_role_display() }}</td>
+                            <td><input type="number" id="vacation-{{ user.id }}" value="{{ user.vacation_days }}" step="1" min="0" class="allocation-input"></td>
+                            <td><input type="number" id="personal-{{ user.id }}" value="{{ user.personal_days }}" step="1" min="0" class="allocation-input"></td>
+                            <td><input type="number" id="sick-{{ user.id }}" value="{{ user.sick_days }}" step="1" min="0" class="allocation-input"></td>
+                            <td><input type="number" id="volunteer-{{ user.id }}" value="{{ user.volunteer_days }}" step="1" min="0" class="allocation-input"></td>
+                            <td><input type="number" id="jury-{{ user.id }}" value="{{ user.jury_duty_days }}" step="1" min="0" class="allocation-input"></td>
+                            <td>
+                                <button onclick="updateAllocation({{ user.id }})" class="btn-update">Update</button>
+                                {% if user.id != current_user.id and user.role != 'exec_director' and user.role != 'hr' %}
+                                <a href="{{ url_for('delete_user', user_id=user.id) }}" class="btn-delete" onclick="return confirm('Delete this user?')">Delete</a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>All Users</h2>
+        <div class="table-wrapper">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Department</th>
+                        <th>Manages</th>
+                        <th>Leave Balances</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr>
+                        <td>{{ user.username }}</td>
+                        <td>{{ user.email }}</td>
+                        <td>{{ user.get_role_display() }}</td>
+                        <td>{{ user.department or '-' }}</td>
+                        <td>{{ user.manages_department or '-' }}</td>
+                        <td>
+                            {% if user.role == 'exec_director' or user.role == 'hr' %}
+                                <span class="dash-placeholder">-</span>
+                            {% else %}
+                                Vacation: {{ user.vacation_used }} / {{ user.vacation_days }}<br>
+                                Personal: {{ user.personal_used }} / {{ user.personal_days }}<br>
+                                Sick: {{ user.sick_used }} / {{ user.sick_days }}<br>
+                                Volunteer: {{ user.volunteer_used }} / {{ user.volunteer_days }}<br>
+                                Jury Duty: {{ user.jury_duty_used }} / {{ user.jury_duty_days }}
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>All Vacation Requests</h2>
+        <div class="table-wrapper">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Employee</th>
+                        <th>Category</th>
+                        <th>Start Date</th>
+                        <th>End Date</th>
+                        <th>Amount</th>
+                        <th>Reason</th>
+                        <th>Status</th>
+                        <th>Deducts</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for req in all_requests %}
+                    <tr {% if req.is_special_consideration %}class="special-consideration"{% endif %}>
+                        <td>{{ req.employee.username }}</td>
+                        <td>
+                            {% if req.leave_type == 'part_day' %}
+                                <span class="category-badge" style="background: #9b59b6;">Part of Day</span>
+                            {% elif req.category == 'vacation' %}
+                                <span class="category-badge category-vacation">Vacation</span>
+                            {% elif req.category == 'personal' %}
+                                <span class="category-badge category-personal">Personal</span>
+                            {% elif req.category == 'sick' %}
+                                <span class="category-badge category-sick">Sick</span>
+                            {% elif req.category == 'volunteer' %}
+                                <span class="category-badge category-volunteer">Volunteer</span>
+                            {% elif req.category == 'jury_duty' %}
+                                <span class="category-badge category-jury">Jury Duty</span>
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>{{ req.start_date }}</td>
+                        <td>{{ req.end_date }}</td>
+                        <td>{{ req.get_display_text() }}</td>
+                        <td>{{ req.reason }}</td>
+                        <td class="status-{{ req.status }}">{{ req.status|upper }}</td>
+                        <td>{% if req.deduct_from_balance %}Yes{% else %}No{% endif %}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Summary</h2>
+        <div class="stats-grid">
+            <div class="stat-item">
+                <div class="stat-number">{{ users|selectattr('role', 'ne', 'exec_director')|selectattr('role', 'ne', 'hr')|list|length }}</div>
+                <div class="stat-label">Total Users</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">{{ all_requests|length }}</div>
+                <div class="stat-label">Total Requests</div>
+            </div>
+            <div class="stat-item">
+                {% set pending_count = all_requests|selectattr('status', 'equalto', 'pending')|list|length %}
+                <div class="stat-number">{{ pending_count }}</div>
+                <div class="stat-label">Pending</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function updateAllocation(userId) {
+        var vacation = document.getElementById('vacation-' + userId).value;
+        var personal = document.getElementById('personal-' + userId).value;
+        var sick = document.getElementById('sick-' + userId).value;
+        var volunteer = document.getElementById('volunteer-' + userId).value;
+        var jury = document.getElementById('jury-' + userId).value;
+        
+        fetch('/update_user_allocations', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                user_id: userId,
+                vacation: vacation,
+                personal: personal,
+                sick: sick,
+                volunteer: volunteer,
+                jury_duty: jury
+            })
+        })
+        .then(function(response) {
+            return response.json();
+        })
+        .then(function(data) {
+            if (data.success) {
+                alert('Allocations updated successfully!');
+                location.reload();
+            } else {
+                alert('Error updating allocations');
+            }
+        })
+        .catch(function(error) {
+            alert('Error: ' + error);
+        });
+    }
+</script>
+
+</body>
+</html>

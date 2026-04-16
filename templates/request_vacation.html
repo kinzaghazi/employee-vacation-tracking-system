@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Request Time Off</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .category-select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            background-color: white;
+        }
+        .balance-info {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 5px;
+            font-size: 13px;
+            color: #666;
+        }
+        .leave-type-group {
+            margin-bottom: 20px;
+        }
+        .leave-option {
+            display: inline-block;
+            margin-right: 20px;
+            cursor: pointer;
+            padding: 10px 20px;
+            background: #f0f0f0;
+            border-radius: 5px;
+        }
+        .time-group {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            display: none;
+        }
+        .time-group.active {
+            display: block;
+        }
+        .time-inputs {
+            display: flex;
+            gap: 15px;
+            margin-top: 10px;
+        }
+        .time-inputs div {
+            flex: 1;
+        }
+        .time-inputs input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .info-note {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+        .balance-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .balance-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .balance-card h4 {
+            margin: 0 0 5px 0;
+            font-size: 14px;
+        }
+        .balance-card .days {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .category-group {
+            margin-bottom: 20px;
+            display: none;
+        }
+        .category-group.active {
+            display: block;
+        }
+        .reason-group {
+            margin-top: 20px;
+            display: none;
+        }
+        .reason-group.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <h1>Vacation Request System</h1>
+        <div>
+            <a href="{{ url_for('dashboard') }}">Dashboard</a>
+            <a href="{{ url_for('logout') }}">Logout</a>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="card">
+            <h2>Request Time Off</h2>
+            
+            <div class="balance-grid">
+                <div class="balance-card">
+                    <h4>Vacation</h4>
+                    <div class="days">{{ current_user.vacation_days - current_user.vacation_used - current_user.vacation_pending }}</div>
+                </div>
+                <div class="balance-card">
+                    <h4>Personal</h4>
+                    <div class="days">{{ current_user.personal_days - current_user.personal_used - current_user.personal_pending }}</div>
+                </div>
+                <div class="balance-card">
+                    <h4>Sick</h4>
+                    <div class="days">{{ current_user.sick_days - current_user.sick_used - current_user.sick_pending }}</div>
+                </div>
+                <div class="balance-card">
+                    <h4>Volunteer</h4>
+                    <div class="days">{{ current_user.volunteer_days - current_user.volunteer_used - current_user.volunteer_pending }}</div>
+                </div>
+                <div class="balance-card">
+                    <h4>Jury Duty</h4>
+                    <div class="days">{{ current_user.jury_duty_days - current_user.jury_duty_used - current_user.jury_duty_pending }}</div>
+                </div>
+            </div>
+            
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            
+            <form method="POST">
+                <div class="form-group">
+                    <label>Leave Type</label>
+                    <div class="leave-type-group">
+                        <label class="leave-option">
+                            <input type="radio" name="leave_type" value="full_day" checked> Full Day(s)
+                        </label>
+                        <label class="leave-option">
+                            <input type="radio" name="leave_type" value="part_day"> Part of Day
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Category Dropdown - Only shows for Full Day -->
+                <div id="category-group" class="category-group">
+                    <div class="form-group">
+                        <label>Leave Category</label>
+                        <select name="category" id="category-select" class="category-select">
+                            <option value="">-- Select a Category --</option>
+                            <option value="vacation">Vacation</option>
+                            <option value="personal">Personal Day</option>
+                            <option value="sick">Sick Day</option>
+                            <option value="volunteer">Volunteer Work</option>
+                            <option value="jury_duty">Jury Duty</option>
+                        </select>
+                        <div id="category-balance" class="balance-info"></div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Start Date</label>
+                    <input type="date" name="start_date" id="start_date" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>End Date</label>
+                    <input type="date" name="end_date" id="end_date" required>
+                </div>
+                
+                <div id="time-group" class="time-group">
+                    <label>Time (for part of day requests)</label>
+                    <div class="time-inputs">
+                        <div>
+                            <label>From:</label>
+                            <input type="time" name="start_time" id="start_time">
+                        </div>
+                        <div>
+                            <label>To:</label>
+                            <input type="time" name="end_time" id="end_time">
+                        </div>
+                    </div>
+                    <div id="hours-calculated" class="info-note"></div>
+                </div>
+                
+                <!-- Reason text box - shows for part of day -->
+                <div id="reason-group" class="reason-group">
+                    <div class="form-group">
+                        <label>Reason</label>
+                        <textarea name="reason" id="reason-text" rows="3" placeholder="Please provide details about your request..." style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;"></textarea>
+                    </div>
+                </div>
+                
+                {% if current_user.role == 'employee' and dept_heads %}
+                <div class="form-group">
+                    <label>Select Department Head for Approval</label>
+                    <select name="dept_head_id" required>
+                        <option value="">-- Select a Department Head --</option>
+                        {% for head in dept_heads %}
+                        <option value="{{ head.id }}">{{ head.username }} ({{ head.department }} Department)</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endif %}
+                
+                <button type="submit" class="btn btn-primary">Submit Request</button>
+            </form>
+            
+            <a href="{{ url_for('dashboard') }}" class="btn btn-back">Back to Dashboard</a>
+        </div>
+    </div>
+    
+    <script>
+        var balances = {
+            vacation: {{ current_user.vacation_days - current_user.vacation_used - current_user.vacation_pending }},
+            personal: {{ current_user.personal_days - current_user.personal_used - current_user.personal_pending }},
+            sick: {{ current_user.sick_days - current_user.sick_used - current_user.sick_pending }},
+            volunteer: {{ current_user.volunteer_days - current_user.volunteer_used - current_user.volunteer_pending }},
+            jury_duty: {{ current_user.jury_duty_days - current_user.jury_duty_used - current_user.jury_duty_pending }}
+        };
+        
+        var catSelect = document.getElementById('category-select');
+        var balanceDiv = document.getElementById('category-balance');
+        
+        if (catSelect) {
+            catSelect.onchange = function() {
+                var val = this.value;
+                if (val && balances[val] !== undefined) {
+                    balanceDiv.innerHTML = 'Available: ' + balances[val] + ' days';
+                } else {
+                    balanceDiv.innerHTML = '';
+                }
+            };
+        }
+        
+        var fullDayRadio = document.querySelector('input[value="full_day"]');
+        var partDayRadio = document.querySelector('input[value="part_day"]');
+        var categoryGroup = document.getElementById('category-group');
+        var timeGroupDiv = document.getElementById('time-group');
+        var reasonGroupDiv = document.getElementById('reason-group');
+        var reasonText = document.getElementById('reason-text');
+        var startTime = document.getElementById('start_time');
+        var endTime = document.getElementById('end_time');
+        var hoursCalc = document.getElementById('hours-calculated');
+        var startDateElem = document.getElementById('start_date');
+        var endDateElem = document.getElementById('end_date');
+        
+        function updateTimeGroup() {
+            if (partDayRadio.checked) {
+                // Part of Day selected
+                timeGroupDiv.classList.add('active');
+                reasonGroupDiv.classList.add('active');
+                categoryGroup.classList.remove('active');
+                startTime.required = true;
+                endTime.required = true;
+                reasonText.required = true;
+                if (catSelect) {
+                    catSelect.required = false;
+                    catSelect.disabled = true;
+                    catSelect.value = "";
+                }
+                calculateHoursDisplay();
+            } else {
+                // Full Day selected
+                timeGroupDiv.classList.remove('active');
+                reasonGroupDiv.classList.remove('active');
+                categoryGroup.classList.add('active');
+                startTime.required = false;
+                endTime.required = false;
+                reasonText.required = false;
+                if (catSelect) {
+                    catSelect.required = true;
+                    catSelect.disabled = false;
+                }
+                hoursCalc.innerHTML = '';
+            }
+        }
+        
+        function calculateHoursDisplay() {
+            if (startTime.value && endTime.value) {
+                var start = startTime.value;
+                var end = endTime.value;
+                var startHour = parseInt(start.split(':')[0]);
+                var startMin = parseInt(start.split(':')[1]);
+                var endHour = parseInt(end.split(':')[0]);
+                var endMin = parseInt(end.split(':')[1]);
+                var hours = (endHour + endMin/60) - (startHour + startMin/60);
+                if (hours < 0) hours += 24;
+                if (hours > 8) hours = 8;
+                
+                var daysCount = 1;
+                if (startDateElem.value && endDateElem.value) {
+                    var startDateObj = new Date(startDateElem.value);
+                    var endDateObj = new Date(endDateElem.value);
+                    daysCount = Math.floor((endDateObj - startDateObj) / (1000 * 60 * 60 * 24)) + 1;
+                }
+                var totalHours = hours * daysCount;
+                var totalDays = totalHours / 8;
+                
+                hoursCalc.innerHTML = 'This request will use ' + totalHours.toFixed(1) + ' hours (' + totalDays.toFixed(2) + ' days)';
+            }
+        }
+        
+        fullDayRadio.onchange = updateTimeGroup;
+        partDayRadio.onchange = updateTimeGroup;
+        startTime.oninput = calculateHoursDisplay;
+        endTime.oninput = calculateHoursDisplay;
+        startDateElem.onchange = calculateHoursDisplay;
+        endDateElem.onchange = calculateHoursDisplay;
+        
+        updateTimeGroup();
+    </script>
+</body>
+</html>

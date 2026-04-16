@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Department Head Dashboard - {{ department }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .btn-approve {
+            background: #27ae60;
+            padding: 5px 10px;
+            font-size: 12px;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn-deny {
+            background: #e74c3c;
+            padding: 5px 10px;
+            font-size: 12px;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn-retract {
+            background: #95a5a6;
+            padding: 5px 10px;
+            font-size: 12px;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .badge-special {
+            background: #f39c12;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: bold;
+            display: inline-block;
+            margin-left: 5px;
+        }
+        .badge-part-day {
+            background: #9b59b6;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: bold;
+            display: inline-block;
+            margin-left: 5px;
+        }
+        .categories-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .category-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        .category-card h3 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+        }
+        .category-card .used {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+        .category-card .available {
+            font-size: 28px;
+            font-weight: bold;
+            margin: 5px 0;
+        }
+        .category-card .total {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+        .table-wrapper {
+            overflow-x: auto;
+            margin-top: 15px;
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .data-table th,
+        .data-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        .data-table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        .status-pending {
+            color: #f39c12;
+            font-weight: bold;
+        }
+        .status-approved {
+            color: #27ae60;
+            font-weight: bold;
+        }
+        .status-denied {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        .special-consideration {
+            background-color: #fff8e7;
+        }
+    </style>
+</head>
+<body>
+
+<div class="navbar">
+    <h1>{{ department }} Department Dashboard</h1>
+    <div>
+        <span>Welcome, {{ current_user.username }}</span>
+        <a href="{{ url_for('request_vacation') }}">Request Time Off</a>
+        <a href="{{ url_for('logout') }}">Logout</a>
+    </div>
+</div>
+
+<div class="container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Leave Balances Card -->
+    <div class="card">
+        <h2>Your Leave Balances</h2>
+        <div class="categories-grid">
+            <div class="category-card">
+                <h3>Vacation</h3>
+                <div class="used">Used: {{ current_user.vacation_used }}</div>
+                <div class="available">{{ current_user.vacation_days - current_user.vacation_used - current_user.vacation_pending }}</div>
+                <div class="total">Total: {{ current_user.vacation_days }}</div>
+            </div>
+            <div class="category-card">
+                <h3>Personal</h3>
+                <div class="used">Used: {{ current_user.personal_used }}</div>
+                <div class="available">{{ current_user.personal_days - current_user.personal_used - current_user.personal_pending }}</div>
+                <div class="total">Total: {{ current_user.personal_days }}</div>
+            </div>
+            <div class="category-card">
+                <h3>Sick</h3>
+                <div class="used">Used: {{ current_user.sick_used }}</div>
+                <div class="available">{{ current_user.sick_days - current_user.sick_used - current_user.sick_pending }}</div>
+                <div class="total">Total: {{ current_user.sick_days }}</div>
+            </div>
+            <div class="category-card">
+                <h3>Volunteer</h3>
+                <div class="used">Used: {{ current_user.volunteer_used }}</div>
+                <div class="available">{{ current_user.volunteer_days - current_user.volunteer_used - current_user.volunteer_pending }}</div>
+                <div class="total">Total: {{ current_user.volunteer_days }}</div>
+            </div>
+            <div class="category-card">
+                <h3>Jury Duty</h3>
+                <div class="used">Used: {{ current_user.jury_duty_used }}</div>
+                <div class="available">{{ current_user.jury_duty_days - current_user.jury_duty_used - current_user.jury_duty_pending }}</div>
+                <div class="total">Total: {{ current_user.jury_duty_days }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- My Vacation Requests -->
+    <div class="card">
+        <h2>My Vacation Requests</h2>
+        {% if own_requests %}
+        <div class="table-wrapper">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Start Date</th>
+                        <th>End Date</th>
+                        <th>Amount</th>
+                        <th>Reason</th>
+                        <th>Status</th>
+                        <th>Submitted</th>
+                        <th>Approved By</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for req in own_requests %}
+                    <tr>
+                        <td>{{ req.start_date }}</td>
+                        <td>{{ req.end_date }}</td>
+                        <td>{{ req.get_display_text() }}</td>
+                        <td>{{ req.reason }}</td>
+                        <td class="status-{{ req.status }}">{{ req.status|upper }}</td>
+                        <td>{{ req.created_at.strftime('%Y-%m-%d') }}</td>
+                        <td>
+                            {% if req.approved_by %}
+                                {% if req.approver %}
+                                    {{ req.approver.username }}
+                                {% else %}
+                                    {{ req.approved_by }}
+                                {% endif %}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if req.status == 'pending' %}
+                            <a href="{{ url_for('retract_request', request_id=req.id) }}" class="btn-retract" onclick="return confirm('Retract this request?')">Retract</a>
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p>No vacation requests from you.</p>
+        {% endif %}
+    </div>
+
+    <!-- Requests Assigned to Me -->
+    <div class="card">
+        <h2>Requests Assigned to Me for Approval</h2>
+        {% if assigned_requests %}
+        <div class="table-wrapper">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Employee</th>
+                        <th>Category</th>
+                        <th>Start Date</th>
+                        <th>End Date</th>
+                        <th>Amount</th>
+                        <th>Reason</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for req in assigned_requests %}
+                    <tr>
+                        <td>{{ req.employee.username }}</td>
+                        <td>
+                            {% if req.category == 'vacation' %}Vacation
+                            {% elif req.category == 'personal' %}Personal
+                            {% elif req.category == 'sick' %}Sick
+                            {% elif req.category == 'volunteer' %}Volunteer
+                            {% else %}Jury Duty
+                            {% endif %}
+                        </td>
+                        <td>{{ req.start_date }}</td>
+                        <td>{{ req.end_date }}</td>
+                        <td>
+                            {{ req.get_display_text() }}
+                            {% if not req.deduct_from_balance %}
+                            <span class="badge-part-day">No Deduction</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ req.reason }}</td>
+                        <td>
+                            <a href="{{ url_for('approve_request', request_id=req.id) }}" class="btn-approve">Approve</a>
+                            <a href="{{ url_for('deny_request', request_id=req.id) }}" class="btn-deny">Deny</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p>No requests assigned to you.</p>
+        {% endif %}
+    </div>
+
+    <!-- Department Employees - Showing Used / Allotted -->
+    <div class="card">
+        <h2>{{ department }} Department Employees</h2>
+        {% if department_employees %}
+        <div class="table-wrapper">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Department</th>
+                        <th>Vacation</th>
+                        <th>Personal</th>
+                        <th>Sick</th>
+                        <th>Volunteer</th>
+                        <th>Jury Duty</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for emp in department_employees %}
+                    <tr>
+                        <td>{{ emp.username }}</td>
+                        <td>{{ emp.email }}</td>
+                        <td>{{ emp.department }}</td>
+                        <td>{{ emp.vacation_used }} / {{ emp.vacation_days }}</td>
+                        <td>{{ emp.personal_used }} / {{ emp.personal_days }}</td>
+                        <td>{{ emp.sick_used }} / {{ emp.sick_days }}</td>
+                        <td>{{ emp.volunteer_used }} / {{ emp.volunteer_days }}</td>
+                        <td>{{ emp.jury_duty_used }} / {{ emp.jury_duty_days }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p>No employees found in your department.</p>
+        {% endif %}
+    </div>
+
+    <!-- All Employee Requests History -->
+    <div class="card">
+        <h2>All Employee Requests History</h2>
+        {% if all_employee_requests %}
+        <div class="table-wrapper">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Employee</th>
+                        <th>Category</th>
+                        <th>Assigned To</th>
+                        <th>Start Date</th>
+                        <th>End Date</th>
+                        <th>Amount</th>
+                        <th>Reason</th>
+                        <th>Status</th>
+                        <th>Approved By</th>
+                        <th>Approved At</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for req in all_employee_requests %}
+                    <tr>
+                        <td>{{ req.employee.username }}</td>
+                        <td>
+                            {% if req.category == 'vacation' %}Vacation
+                            {% elif req.category == 'personal' %}Personal
+                            {% elif req.category == 'sick' %}Sick
+                            {% elif req.category == 'volunteer' %}Volunteer
+                            {% else %}Jury Duty
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if req.assigned_head %}
+                                {{ req.assigned_head.username }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>{{ req.start_date }}</td>
+                        <td>{{ req.end_date }}</td>
+                        <td>
+                            {{ req.get_display_text() }}
+                            {% if not req.deduct_from_balance %}
+                            <span class="badge-part-day">No Deduction</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ req.reason }}</td>
+                        <td class="status-{{ req.status }}">{{ req.status|upper }}</td>
+                        <td>
+                            {% if req.approved_by %}
+                                {% if req.approver %}
+                                    {{ req.approver.username }}
+                                {% else %}
+                                    {{ req.approved_by }}
+                                {% endif %}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if req.approved_at %}
+                                {{ req.approved_at.strftime('%Y-%m-%d %H:%M') }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p>No requests found from employees in your department.</p>
+        {% endif %}
+    </div>
+</div>
+
+</body>
+</html>

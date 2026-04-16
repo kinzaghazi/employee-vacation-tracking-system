@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="navbar">
+        <h1>Admin Dashboard</h1>
+        <div>
+            <span>Welcome, {{ current_user.username }} (Admin)</span>
+            <a href="{{ url_for('logout') }}">Logout</a>
+        </div>
+    </div>
+    
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        <div class="card">
+            <h2>Pending Vacation Requests</h2>
+            {% if pending_requests %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Employee</th>
+                        <th>Start Date</th>
+                        <th>End Date</th>
+                        <th>Days</th>
+                        <th>Reason</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for req in pending_requests %}
+                    <tr>
+                        <td>{{ req.employee.username }}</td>
+                        <td>{{ req.start_date }}</td>
+                        <td>{{ req.end_date }}</td>
+                        <td>{{ req.get_days_count() }}</td>
+                        <td>{{ req.reason }}</td>
+                        <td>
+                            <a href="{{ url_for('approve_request', request_id=req.id) }}" class="btn btn-approve">Approve</a>
+                            <a href="{{ url_for('deny_request', request_id=req.id) }}" class="btn btn-deny">Deny</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p>No pending requests.</p>
+            {% endif %}
+        </div>
+        
+        <div class="card">
+            <h2>All Vacation Requests</h2>
+            {% if all_requests %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Employee</th>
+                        <th>Start Date</th>
+                        <th>End Date</th>
+                        <th>Days</th>
+                        <th>Reason</th>
+                        <th>Status</th>
+                        <th>Approved By</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for req in all_requests %}
+                    <tr>
+                        <td>{{ req.employee.username }}</td>
+                        <td>{{ req.start_date }}</td>
+                        <td>{{ req.end_date }}</td>
+                        <td>{{ req.get_days_count() }}</td>
+                        <td>{{ req.reason }}</td>
+                        <td class="status-{{ req.status }}">{{ req.status|upper }}</td>
+                        <td>
+                            {% if req.approved_by %}
+                                {{ req.approved_by }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p>No requests found.</p>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>
