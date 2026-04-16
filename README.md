@@ -1,24 +1,28 @@
 # Vacation Management System
 
 ## Overview
-A full-stack application built using Python and SQLite that allows organizations to manage employee vacation requests. The system supports multiple user roles with different access levels and permissions.
+A full-stack web application built using Python, SQLite, HTML, and CSS to manage employee vacation requests. The system includes a user interface and backend logic, supporting multiple user roles with different access levels.
 
 ## Features
-- Role-based access control (e.g., employee, manager, admin)
-- Submit, approve, and track vacation requests
-- CRUD operations for managing employee data
-- Centralized SQLite database for storing records
-- Structured backend logic for handling workflows
+- Role-based access control (employee, manager, admin)
+- Submit, review, and approve/reject vacation requests
+- Interactive frontend built with HTML and CSS
+- Backend logic implemented in Python
+- SQLite database for persistent data storage
+- CRUD operations for managing users and requests
 
 ## Tech Stack
 - Python
 - SQLite
+- HTML
+- CSS
 
 ## Key Concepts Demonstrated
-- Database design and relationships
+- Full-stack development (frontend + backend + database)
 - Role-based authorization
-- CRUD operations
-- Application logic and workflow handling
+- Workflow and business logic implementation
+- Database design and data handling
+- User interface development
 
 ## How to Run
 
@@ -31,11 +35,13 @@ cd vacation-management-system
 3. Run the application:
 python main.py
 
+4. Open the application in your browser (if applicable)
+
 ## Future Improvements
-- Add a web-based frontend (React)
-- Implement authentication system
-- Improve UI/UX
-- Add automated testing
+- Migrate frontend to React
+- Add authentication (login system)
+- Improve UI/UX design
+- Add API layer for scalability
 
 ## Notes
-This project was built to demonstrate backend development skills, including database integration, access control, and real-world workflow implementation.
+This project demonstrates the ability to build a complete application with both frontend and backend components, simulating a real-world business system.
